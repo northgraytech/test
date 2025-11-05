@@ -2,27 +2,27 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚫ NGT Stealth Transcriber</title>
+<title>⚫ NGT Stealth Transcriber - Audio & Text</title>
 <style>
-/* --- NGT Dark Mode Styling --- */
+/* --- NGT Dark Mode Styling --- (Minimal Changes) */
 body { 
-    font-family: 'Consolas', 'Courier New', monospace; /* Techy Monospace Font */
-    background-color: #121212; /* Very Dark Background */
+    font-family: 'Consolas', 'Courier New', monospace;
+    background-color: #121212;
     margin:0; 
     padding:0; 
     text-align:center; 
-    color:#e0e0e0; /* Light Gray Text */
+    color:#e0e0e0;
 }
 header { 
     background-color:#000; 
     color:#fff; 
     padding:30px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-    border-bottom: 3px solid #e63946; /* NGT Red Accent */
+    border-bottom: 3px solid #e63946;
 }
 header h1 { 
     margin:0; 
-    color:#4fc3f7; /* Tech Blue Accent */
+    color:#4fc3f7;
     font-size: 2.5em; 
     letter-spacing: 2px;
 }
@@ -31,14 +31,16 @@ section {
 }
 .controls { 
     margin: 30px auto; 
-    max-width: 700px; 
+    max-width: 900px; /* Wider to accommodate 4 buttons */
     display: flex; 
     justify-content: space-around; 
+    flex-wrap: wrap; /* Ensure buttons wrap if screen is small */
 }
 
-/* --- Button Styling (Futuristic/Sleek) --- */
+/* --- Button Styling --- */
 button { 
-    padding:12px 28px; 
+    padding:12px 20px; 
+    margin: 5px; /* Added margin for spacing in the wider container */
     font-size:16px; 
     border: 2px solid;
     border-radius:6px; 
@@ -51,7 +53,7 @@ button {
 }
 button:hover { 
     transform: translateY(-2px); 
-    box-shadow: 0 0 15px rgba(79, 195, 247, 0.4); /* Blue Glow */
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
 }
 button:disabled { 
     opacity: 0.4; 
@@ -61,7 +63,7 @@ button:disabled {
 }
 
 #startBtn { 
-    background-color:#e63946; /* NGT Red */
+    background-color:#e63946;
     color:#fff; 
     border-color: #e63946;
 }
@@ -70,20 +72,30 @@ button:disabled {
     border-color: #c0392b;
 }
 #stopBtn { 
-    background-color:#2c3e50; /* Darker Blue-Gray */
+    background-color:#2c3e50;
     color:#fff; 
-    border-color: #4fc3f7; /* Tech Blue Border */
+    border-color: #4fc3f7;
 }
 #stopBtn:hover:not(:disabled) { 
     background-color: #34495e;
 }
-#downloadBtn { 
+/* New Button Styles */
+#downloadTextBtn { 
     background-color: #1a1a1a; 
-    color:#4fc3f7; /* Tech Blue Text */
+    color:#4fc3f7;
     border-color: #4fc3f7;
 }
-#downloadBtn:hover:not(:disabled) { 
+#downloadTextBtn:hover:not(:disabled) { 
     background-color: #4fc3f7; 
+    color: #000; 
+}
+#downloadAudioBtn { 
+    background-color: #1a1a1a; 
+    color:#00ff00; /* Green accent for audio */
+    border-color: #00ff00;
+}
+#downloadAudioBtn:hover:not(:disabled) { 
+    background-color: #00ff00; 
     color: #000; 
 }
 
@@ -93,7 +105,7 @@ button:disabled {
     font-size: 1.1em; 
     color: #4fc3f7; 
     min-height: 20px; 
-    text-shadow: 0 0 5px rgba(79, 195, 247, 0.5); /* Subtle Glow */
+    text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
 }
 #transcript { 
     width:90%; 
@@ -103,8 +115,8 @@ button:disabled {
     border:2px solid #333; 
     min-height:350px; 
     overflow-y:auto; 
-    background-color:#1c1c1c; /* Dark Inner Background */
-    color:#00ff00; /* Classic Green Terminal Text */
+    background-color:#1c1c1c;
+    color:#00ff00;
     text-align: left; 
     line-height: 1.5; 
     border-radius: 4px; 
@@ -116,14 +128,15 @@ button:disabled {
 </head>
 <body>
 <header>
-  <h1>NGT | STEALTH TRANSCRIBER</h1>
+  <h1>NGT | STEALTH TRANSCRIBER v2.0</h1>
 </header>
 <section>
   <p>INITIATE live audio capture and transcription for meeting data logging. Click <span style="color:#e63946; font-weight:bold;">START</span> to begin data feed.</p>
   <div class="controls">
     <button id="startBtn">START RECORDING</button>
     <button id="stopBtn" disabled>STOP DATA FEED</button>
-    <button id="downloadBtn" disabled>DOWNLOAD LOG</button>
+    <button id="downloadTextBtn" disabled>DOWNLOAD LOG (Text)</button>
+    <button id="downloadAudioBtn" disabled>DOWNLOAD AUDIO (WAV)</button>
   </div>
   <div id="status">STATUS: System Online.</div>
   <div id="transcript"></div>
@@ -131,13 +144,17 @@ button:disabled {
 
 <script>
 let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
 let listening = false;
-let transcriptText = ''; // Stores the final, confirmed transcript
+let transcriptText = '';
 const transcriptDiv = document.getElementById('transcript');
 const statusDiv = document.getElementById('status');
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
-const downloadBtn = document.getElementById('downloadBtn');
+const downloadTextBtn = document.getElementById('downloadTextBtn'); // Renamed
+const downloadAudioBtn = document.getElementById('downloadAudioBtn'); // New
 
 // --- Helper Functions ---
 
@@ -150,19 +167,69 @@ function updateStatus(message, color = '#4fc3f7') {
 function updateButtons(isListening) {
   startBtn.disabled = isListening;
   stopBtn.disabled = !isListening;
-  downloadBtn.disabled = isListening || transcriptText.trim().length === 0;
+  downloadTextBtn.disabled = isListening || transcriptText.trim().length === 0;
+  downloadAudioBtn.disabled = isListening || audioBlob === null;
 }
 
-// --- Speech Recognition Core ---
+function handleDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// --- Audio Recording Core (MediaStream Recording API) ---
+
+async function startAudioRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      // Create the audio blob once recording stops
+      audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+      // Stop the microphone stream tracks to release the mic
+      stream.getTracks().forEach(track => track.stop()); 
+      updateButtons(false);
+    };
+    
+    // Start recording audio
+    mediaRecorder.start(); 
+    return true;
+
+  } catch (err) {
+    updateStatus(`MIC ACCESS DENIED: ${err.name}. Check browser permissions.`, '#e63946');
+    console.error('Audio recording error:', err);
+    return false;
+  }
+}
+
+function stopAudioRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
+
+// --- Speech Recognition Core (Web Speech API) ---
 
 function initializeRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    updateStatus('ERROR: Web Speech API not detected. Try Chrome or Edge.', '#e63946');
+    updateStatus('ERROR: Web Speech API not detected.', '#e63946');
     return null;
   }
   
+  // ... (recognition logic is mostly the same as previous version) ...
   const recog = new SpeechRecognition();
   recog.continuous = true; 
   recog.interimResults = true; 
@@ -175,7 +242,6 @@ function initializeRecognition() {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       const result = event.results[i];
       if (result.isFinal) {
-        // Add speaker identifier or just capitalize the start of a sentence
         let sentence = result[0].transcript;
         sentence = sentence.charAt(0).toUpperCase() + sentence.slice(1);
         final += `> ${sentence}. \n`; 
@@ -186,10 +252,7 @@ function initializeRecognition() {
 
     transcriptText += final;
     
-    // Display both final and live interim text in the div
     transcriptDiv.innerText = transcriptText + (interim ? ` [LIVE FEED: ${interim}... ]` : '');
-    
-    // Auto-scroll to the bottom 
     transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
   };
 
@@ -205,29 +268,44 @@ function initializeRecognition() {
   };
   
   recog.onerror = (event) => {
-    updateStatus(`CRITICAL ERROR: ${event.error}`, '#e63946');
-    console.error('Speech recognition error:', event.error);
-    if (listening) {
-      recognition.stop();
-      listening = false;
-      updateButtons(false);
-      updateStatus('SYSTEM HALTED: Review Log.', '#e63946');
-    }
+    updateStatus(`CRITICAL ERROR: ${event.error}. Stopping all processes.`, '#e63946');
+    stopAllProcesses();
   };
 
   return recog;
 }
 
+function stopAllProcesses() {
+    if (!listening) return;
+    
+    // Stop Web Speech API
+    if (recognition) recognition.stop();
+    
+    // Stop Media Recorder
+    stopAudioRecording();
+
+    listening = false;
+    updateButtons(false);
+    updateStatus('PAUSED: Finalizing Transcript Log and Audio.', '#4fc3f7');
+    transcriptDiv.innerText = transcriptText;
+}
+
 // --- Event Listeners ---
 
-startBtn.addEventListener('click', () => {
+startBtn.addEventListener('click', async () => {
   if (listening) return;
 
-  if (transcriptText.trim().length > 0) {
-    transcriptText = '';
-    transcriptDiv.innerText = '';
-  }
-  
+  // 1. Clear previous data
+  transcriptText = '';
+  transcriptDiv.innerText = '';
+  audioBlob = null;
+  audioChunks = [];
+
+  // 2. Start Audio Recording (must be requested first to get mic permission)
+  const audioStarted = await startAudioRecording();
+  if (!audioStarted) return; // Stop if mic access failed
+
+  // 3. Start Transcription
   recognition = initializeRecognition();
   
   if (recognition) {
@@ -235,47 +313,44 @@ startBtn.addEventListener('click', () => {
       recognition.start();
       listening = true;
       updateButtons(true);
-      updateStatus('ACTIVE: Data Feed Initiated.', '#00ff00'); /* Bright Green for Active */
+      updateStatus('ACTIVE: Data Feed Initiated. Audio and Text Capture Running.', '#00ff00');
     } catch (e) {
-      updateStatus('WARNING: Already Active.', '#00ff00'); 
+      console.warn('Recognition start failed:', e);
       listening = true;
       updateButtons(true);
+      updateStatus('ACTIVE: Data Feed Initiated. Audio and Text Capture Running.', '#00ff00');
     }
   }
 });
 
-stopBtn.addEventListener('click', () => {
-  if (!listening) return;
-  
-  recognition.stop();
-  listening = false;
-  updateButtons(false);
-  updateStatus('PAUSED: Finalizing Transcript Log.', '#4fc3f7');
-  
-  transcriptDiv.innerText = transcriptText;
-});
+stopBtn.addEventListener('click', stopAllProcesses);
 
-downloadBtn.addEventListener('click', () => {
+downloadTextBtn.addEventListener('click', () => {
   if (transcriptText.trim().length === 0) {
     updateStatus('ERROR: Log is empty. Nothing to download.', '#e63946');
     return;
   }
   
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, '');
   const blob = new Blob([transcriptText], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, ''); // Format YYYYMMDDHHMMSS
+  handleDownload(blob, `NGT_LOG_TEXT_${date}.txt`);
   
-  a.href = url;
-  a.download = `NGT_LOG_${date}.txt`;
+  updateStatus('SUCCESS: Text Log downloaded.', '#00ff00');
+});
+
+downloadAudioBtn.addEventListener('click', () => {
+    if (!audioBlob) {
+        updateStatus('ERROR: Audio buffer is empty. Nothing to download.', '#e63946');
+        return;
+    }
   
-  document.body.appendChild(a);
-  a.click();
+    const date = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, '');
+    // NOTE: The MIME type of the audio blob is determined by the browser/MediaRecorder. 
+    // It's often 'audio/webm' or 'audio/ogg', not necessarily WAV, but we can name it generically.
+    const fileExtension = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('ogg') ? 'ogg' : 'wav'; 
+    handleDownload(audioBlob, `NGT_LOG_AUDIO_${date}.${fileExtension}`);
   
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  updateStatus('SUCCESS: Log downloaded.', '#00ff00');
+    updateStatus('SUCCESS: Audio Log downloaded.', '#00ff00');
 });
 
 // Initial state setup
