@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>NGT Audio Recorder</title>
+<style>
+body { font-family: Arial, sans-serif; background-color:#f7f7f7; margin:0; padding:0; text-align:center; color:#333;}
+header { background-color:#000; color:#fff; padding:20px;}
+header h1 { margin:0; color:#e63946; }
+section { padding:20px; }
+button { margin:10px; padding:10px 20px; font-size:16px; border:none; border-radius:4px; cursor:pointer; }
+#startBtn { background-color:#e63946; color:#fff; }
+#stopBtn { background-color:#555; color:#fff; }
+#downloadBtn { background-color:#333; color:#fff; }
+#transcript { width:80%; margin:20px auto; padding:10px; border:1px solid #ccc; height:300px; overflow-y:auto; background-color:#fff; color:#000; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NGT Audio Recorder</h1>
+</header>
+<section>
+  <p>Click “Start Recording” to begin capturing audio and transcribing it live. Click “Stop Recording” when finished. Download your transcript locally.</p>
+  <div>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <button id="downloadBtn" disabled>Download Transcript</button>
+  </div>
+  <div id="transcript" contenteditable="false"></div>
+</section>
+<script>
+let recognition;
+let listening = false;
+let transcriptText = '';
+
+function initializeRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Sorry, your browser does not support the Web Speech API.');
+    return null;
+  }
+  const recog = new SpeechRecognition();
+  recog.continuous = true;
+  recog.interimResults = true;
+  recog.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        transcriptText += result[0].transcript + '\n';
+      } else {
+        interim += result[0].transcript;
+      }
+    }
+    document.getElementById('transcript').innerText = transcriptText + interim;
+  };
+  recog.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+  };
+  return recog;
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (listening) return;
+  recognition = initializeRecognition();
+  if (recognition) {
+    recognition.start();
+    listening = true;
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    document.getElementById('downloadBtn').disabled = true;
+  }
+});
+
+document.getElementById('stopBtn').addEventListener('click', () => {
+  if (!listening) return;
+  recognition.stop();
+  listening = false;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('downloadBtn').disabled = false;
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const blob = new Blob([transcriptText], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'transcript.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
