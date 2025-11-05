@@ -2,95 +2,204 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NGT Audio Recorder</title>
+<title>🎙️ Meeting Transcriber</title>
 <style>
-body { font-family: Arial, sans-serif; background-color:#f7f7f7; margin:0; padding:0; text-align:center; color:#333;}
-header { background-color:#000; color:#fff; padding:20px;}
-header h1 { margin:0; color:#e63946; }
-section { padding:20px; }
-button { margin:10px; padding:10px 20px; font-size:16px; border:none; border-radius:4px; cursor:pointer; }
-#startBtn { background-color:#e63946; color:#fff; }
-#stopBtn { background-color:#555; color:#fff; }
-#downloadBtn { background-color:#333; color:#fff; }
-#transcript { width:80%; margin:20px auto; padding:10px; border:1px solid #ccc; height:300px; overflow-y:auto; background-color:#fff; color:#000; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f0f4f8; margin:0; padding:0; text-align:center; color:#2c3e50;}
+header { background-color:#34495e; color:#ecf0f1; padding:25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+header h1 { margin:0; color:#4fc3f7; font-size: 2.5em; }
+section { padding:30px 20px; }
+.controls { margin: 20px auto; max-width: 600px; display: flex; justify-content: space-around; }
+button { padding:12px 24px; font-size:16px; border:none; border-radius:30px; cursor:pointer; transition: background-color 0.3s, transform 0.1s; font-weight: bold; min-width: 150px; }
+button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+#startBtn { background-color:#2ecc71; color:#fff; } /* Green for Go */
+#startBtn:hover:not(:disabled) { background-color: #27ae60; }
+#stopBtn { background-color:#e74c3c; color:#fff; } /* Red for Stop */
+#stopBtn:hover:not(:disabled) { background-color: #c0392b; }
+#downloadBtn { background-color:#3498db; color:#fff; } /* Blue for Action */
+#downloadBtn:hover:not(:disabled) { background-color: #2980b9; }
+
+#status { margin-top: 15px; font-size: 1.1em; color: #f39c12; min-height: 20px; }
+#transcript { width:90%; max-width:800px; margin:20px auto; padding:20px; border:1px solid #bdc3c7; min-height:300px; overflow-y:auto; background-color:#ffffff; color:#2c3e50; text-align: left; line-height: 1.6; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); white-space: pre-wrap;}
 </style>
 </head>
 <body>
 <header>
-  <h1>NGT Audio Recorder</h1>
+  <h1>🎙️ Live Meeting Transcriber</h1>
 </header>
 <section>
-  <p>Click “Start Recording” to begin capturing audio and transcribing it live. Click “Stop Recording” when finished. Download your transcript locally.</p>
-  <div>
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop Recording</button>
-    <button id="downloadBtn" disabled>Download Transcript</button>
-  </div>
-  <div id="transcript" contenteditable="false"></div>
+  <p>Use the **Start Recording** button to begin transcription. The recognized speech will appear below.</p>
+  <div class="controls">
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <button id="downloadBtn" disabled>Download Transcript</button>
+  </div>
+  <div id="status">Ready to start.</div>
+  <div id="transcript"></div>
 </section>
-<script>
-let recognition;
-let listening = false;
-let transcriptText = '';
 
-function initializeRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('Sorry, your browser does not support the Web Speech API.');
-    return null;
-  }
-  const recog = new SpeechRecognition();
-  recog.continuous = true;
-  recog.interimResults = true;
-  recog.onresult = (event) => {
-    let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      const result = event.results[i];
-      if (result.isFinal) {
-        transcriptText += result[0].transcript + '\n';
-      } else {
-        interim += result[0].transcript;
-      }
-    }
-    document.getElementById('transcript').innerText = transcriptText + interim;
-  };
-  recog.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-  };
-  return recog;
+<script>
+let recognition = null;
+let listening = false;
+let transcriptText = ''; // Stores the final, confirmed transcript
+const transcriptDiv = document.getElementById('transcript');
+const statusDiv = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+// --- Helper Functions ---
+
+function updateStatus(message, color = '#f39c12') {
+  statusDiv.innerText = message;
+  statusDiv.style.color = color;
 }
 
-document.getElementById('startBtn').addEventListener('click', () => {
-  if (listening) return;
-  recognition = initializeRecognition();
-  if (recognition) {
-    recognition.start();
-    listening = true;
-    document.getElementById('startBtn').disabled = true;
-    document.getElementById('stopBtn').disabled = false;
-    document.getElementById('downloadBtn').disabled = true;
-  }
+function updateButtons(isListening) {
+  startBtn.disabled = isListening;
+  stopBtn.disabled = !isListening;
+  downloadBtn.disabled = isListening || transcriptText.trim().length === 0;
+}
+
+// --- Speech Recognition Core ---
+
+function initializeRecognition() {
+  // Check for browser compatibility (using vendor prefixes for wider support)
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    updateStatus('❌ Browser Error: Web Speech API not supported. Try Chrome or Edge.', '#e74c3c');
+    return null;
+  }
+  
+  const recog = new SpeechRecognition();
+  recog.continuous = true; // Keep listening even after a pause
+  recog.interimResults = true; // Show results as they come in (live preview)
+  recog.lang = 'en-US'; // Set a default language
+
+  // Event fired when speech is recognized
+  recog.onresult = (event) => {
+    let interim = '';
+    let final = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        final += result[0].transcript + '. \n'; // Add punctuation and newline
+      } else {
+        interim += result[0].transcript;
+      }
+    }
+
+    // Update the global final transcript storage
+    transcriptText += final;
+    
+    // Display both final and live interim text in the div
+    transcriptDiv.innerText = transcriptText + (interim ? ' (' + interim + '...)' : '');
+    
+    // Auto-scroll to the bottom for the live effect
+    transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+  };
+
+  // Event fired when recognition ends unexpectedly (e.g., timeout)
+  recog.onend = () => {
+    if (listening) {
+      // If still meant to be listening, restart the service (to handle timeouts)
+      updateStatus('⚠️ Restarting listening service...', '#f39c12');
+      try {
+        recog.start();
+      } catch (e) {
+        // Catch error if start is called too soon
+        console.error('Error restarting recognition:', e);
+      }
+    }
+  };
+  
+  // Event fired on errors
+  recog.onerror = (event) => {
+    updateStatus(`❌ Recognition Error: ${event.error}`, '#e74c3c');
+    console.error('Speech recognition error:', event.error);
+    // Stop the process on critical error
+    if (listening) {
+      recognition.stop();
+      listening = false;
+      updateButtons(false);
+      updateStatus('Transcription stopped due to error.', '#e74c3c');
+    }
+  };
+
+  return recog;
+}
+
+// --- Event Listeners ---
+
+startBtn.addEventListener('click', () => {
+  if (listening) return;
+
+  // Clear transcript only if it's the first time or user wants a fresh start (optional, but cleaner)
+  if (transcriptText.trim().length > 0) {
+    transcriptText = '';
+    transcriptDiv.innerText = '';
+  }
+  
+  recognition = initializeRecognition();
+  
+  if (recognition) {
+    try {
+      recognition.start();
+      listening = true;
+      updateButtons(true);
+      updateStatus('🟢 Listening... Speak now.', '#2ecc71');
+    } catch (e) {
+      // Handle case where recognition is already active
+      console.warn('Recognition already started or an error occurred:', e);
+      listening = true;
+      updateButtons(true);
+      updateStatus('🟢 Listening... Speak now.', '#2ecc71');
+    }
+  }
 });
 
-document.getElementById('stopBtn').addEventListener('click', () => {
-  if (!listening) return;
-  recognition.stop();
-  listening = false;
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('stopBtn').disabled = true;
-  document.getElementById('downloadBtn').disabled = false;
+stopBtn.addEventListener('click', () => {
+  if (!listening) return;
+  
+  recognition.stop();
+  listening = false;
+  updateButtons(false);
+  updateStatus('⏸️ Recording stopped. Finalizing transcript.', '#3498db');
+  
+  // Remove the interim text placeholder after stopping
+  transcriptDiv.innerText = transcriptText;
 });
 
-document.getElementById('downloadBtn').addEventListener('click', () => {
-  const blob = new Blob([transcriptText], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'transcript.txt';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+downloadBtn.addEventListener('click', () => {
+  if (transcriptText.trim().length === 0) {
+    updateStatus('🚫 Nothing to download.', '#e74c3c');
+    return;
+  }
+  
+  const blob = new Blob([transcriptText], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  
+  a.href = url;
+  a.download = `meeting_transcript_${date}.txt`;
+  
+  document.body.appendChild(a);
+  a.click();
+  
+  // Clean up the temporary URL and element
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  updateStatus('✅ Transcript downloaded successfully!', '#2ecc71');
+});
+
+// Initial state setup
+document.addEventListener('DOMContentLoaded', () => {
+  updateButtons(false);
 });
 </script>
 </body>
