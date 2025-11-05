@@ -2,40 +2,130 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>🎙️ Meeting Transcriber</title>
+<title>⚫ NGT Stealth Transcriber</title>
 <style>
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f0f4f8; margin:0; padding:0; text-align:center; color:#2c3e50;}
-header { background-color:#34495e; color:#ecf0f1; padding:25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-header h1 { margin:0; color:#4fc3f7; font-size: 2.5em; }
-section { padding:30px 20px; }
-.controls { margin: 20px auto; max-width: 600px; display: flex; justify-content: space-around; }
-button { padding:12px 24px; font-size:16px; border:none; border-radius:30px; cursor:pointer; transition: background-color 0.3s, transform 0.1s; font-weight: bold; min-width: 150px; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+/* --- NGT Dark Mode Styling --- */
+body { 
+    font-family: 'Consolas', 'Courier New', monospace; /* Techy Monospace Font */
+    background-color: #121212; /* Very Dark Background */
+    margin:0; 
+    padding:0; 
+    text-align:center; 
+    color:#e0e0e0; /* Light Gray Text */
+}
+header { 
+    background-color:#000; 
+    color:#fff; 
+    padding:30px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+    border-bottom: 3px solid #e63946; /* NGT Red Accent */
+}
+header h1 { 
+    margin:0; 
+    color:#4fc3f7; /* Tech Blue Accent */
+    font-size: 2.5em; 
+    letter-spacing: 2px;
+}
+section { 
+    padding:30px 20px; 
+}
+.controls { 
+    margin: 30px auto; 
+    max-width: 700px; 
+    display: flex; 
+    justify-content: space-around; 
+}
 
-#startBtn { background-color:#2ecc71; color:#fff; } /* Green for Go */
-#startBtn:hover:not(:disabled) { background-color: #27ae60; }
-#stopBtn { background-color:#e74c3c; color:#fff; } /* Red for Stop */
-#stopBtn:hover:not(:disabled) { background-color: #c0392b; }
-#downloadBtn { background-color:#3498db; color:#fff; } /* Blue for Action */
-#downloadBtn:hover:not(:disabled) { background-color: #2980b9; }
+/* --- Button Styling (Futuristic/Sleek) --- */
+button { 
+    padding:12px 28px; 
+    font-size:16px; 
+    border: 2px solid;
+    border-radius:6px; 
+    cursor:pointer; 
+    transition: background-color 0.3s, border-color 0.3s, transform 0.1s, box-shadow 0.3s; 
+    font-weight: bold; 
+    min-width: 180px; 
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+button:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.4); /* Blue Glow */
+}
+button:disabled { 
+    opacity: 0.4; 
+    cursor: not-allowed; 
+    transform: none; 
+    box-shadow: none; 
+}
 
-#status { margin-top: 15px; font-size: 1.1em; color: #f39c12; min-height: 20px; }
-#transcript { width:90%; max-width:800px; margin:20px auto; padding:20px; border:1px solid #bdc3c7; min-height:300px; overflow-y:auto; background-color:#ffffff; color:#2c3e50; text-align: left; line-height: 1.6; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); white-space: pre-wrap;}
+#startBtn { 
+    background-color:#e63946; /* NGT Red */
+    color:#fff; 
+    border-color: #e63946;
+}
+#startBtn:hover:not(:disabled) { 
+    background-color: #c0392b; 
+    border-color: #c0392b;
+}
+#stopBtn { 
+    background-color:#2c3e50; /* Darker Blue-Gray */
+    color:#fff; 
+    border-color: #4fc3f7; /* Tech Blue Border */
+}
+#stopBtn:hover:not(:disabled) { 
+    background-color: #34495e;
+}
+#downloadBtn { 
+    background-color: #1a1a1a; 
+    color:#4fc3f7; /* Tech Blue Text */
+    border-color: #4fc3f7;
+}
+#downloadBtn:hover:not(:disabled) { 
+    background-color: #4fc3f7; 
+    color: #000; 
+}
+
+/* --- Status & Transcript Styling --- */
+#status { 
+    margin-top: 20px; 
+    font-size: 1.1em; 
+    color: #4fc3f7; 
+    min-height: 20px; 
+    text-shadow: 0 0 5px rgba(79, 195, 247, 0.5); /* Subtle Glow */
+}
+#transcript { 
+    width:90%; 
+    max-width:900px;
+    margin:25px auto; 
+    padding:20px; 
+    border:2px solid #333; 
+    min-height:350px; 
+    overflow-y:auto; 
+    background-color:#1c1c1c; /* Dark Inner Background */
+    color:#00ff00; /* Classic Green Terminal Text */
+    text-align: left; 
+    line-height: 1.5; 
+    border-radius: 4px; 
+    box-shadow: inset 0 0 10px rgba(0,255,0,0.1);
+    white-space: pre-wrap;
+    font-size: 1.05em;
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>🎙️ Live Meeting Transcriber</h1>
+  <h1>NGT | STEALTH TRANSCRIBER</h1>
 </header>
 <section>
-  <p>Use the **Start Recording** button to begin transcription. The recognized speech will appear below.</p>
+  <p>INITIATE live audio capture and transcription for meeting data logging. Click <span style="color:#e63946; font-weight:bold;">START</span> to begin data feed.</p>
   <div class="controls">
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop Recording</button>
-    <button id="downloadBtn" disabled>Download Transcript</button>
+    <button id="startBtn">START RECORDING</button>
+    <button id="stopBtn" disabled>STOP DATA FEED</button>
+    <button id="downloadBtn" disabled>DOWNLOAD LOG</button>
   </div>
-  <div id="status">Ready to start.</div>
+  <div id="status">STATUS: System Online.</div>
   <div id="transcript"></div>
 </section>
 
@@ -51,9 +141,10 @@ const downloadBtn = document.getElementById('downloadBtn');
 
 // --- Helper Functions ---
 
-function updateStatus(message, color = '#f39c12') {
-  statusDiv.innerText = message;
+function updateStatus(message, color = '#4fc3f7') {
+  statusDiv.innerText = 'STATUS: ' + message;
   statusDiv.style.color = color;
+  statusDiv.style.textShadow = color !== '#e63946' ? `0 0 5px ${color}` : 'none';
 }
 
 function updateButtons(isListening) {
@@ -65,20 +156,18 @@ function updateButtons(isListening) {
 // --- Speech Recognition Core ---
 
 function initializeRecognition() {
-  // Check for browser compatibility (using vendor prefixes for wider support)
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    updateStatus('❌ Browser Error: Web Speech API not supported. Try Chrome or Edge.', '#e74c3c');
+    updateStatus('ERROR: Web Speech API not detected. Try Chrome or Edge.', '#e63946');
     return null;
   }
   
   const recog = new SpeechRecognition();
-  recog.continuous = true; // Keep listening even after a pause
-  recog.interimResults = true; // Show results as they come in (live preview)
-  recog.lang = 'en-US'; // Set a default language
+  recog.continuous = true; 
+  recog.interimResults = true; 
+  recog.lang = 'en-US'; 
 
-  // Event fired when speech is recognized
   recog.onresult = (event) => {
     let interim = '';
     let final = '';
@@ -86,46 +175,43 @@ function initializeRecognition() {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       const result = event.results[i];
       if (result.isFinal) {
-        final += result[0].transcript + '. \n'; // Add punctuation and newline
+        // Add speaker identifier or just capitalize the start of a sentence
+        let sentence = result[0].transcript;
+        sentence = sentence.charAt(0).toUpperCase() + sentence.slice(1);
+        final += `> ${sentence}. \n`; 
       } else {
         interim += result[0].transcript;
       }
     }
 
-    // Update the global final transcript storage
     transcriptText += final;
     
     // Display both final and live interim text in the div
-    transcriptDiv.innerText = transcriptText + (interim ? ' (' + interim + '...)' : '');
+    transcriptDiv.innerText = transcriptText + (interim ? ` [LIVE FEED: ${interim}... ]` : '');
     
-    // Auto-scroll to the bottom for the live effect
+    // Auto-scroll to the bottom 
     transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
   };
 
-  // Event fired when recognition ends unexpectedly (e.g., timeout)
   recog.onend = () => {
     if (listening) {
-      // If still meant to be listening, restart the service (to handle timeouts)
-      updateStatus('⚠️ Restarting listening service...', '#f39c12');
+      updateStatus('RESTARTING: Service Timeout Detected...', '#e63946');
       try {
         recog.start();
       } catch (e) {
-        // Catch error if start is called too soon
         console.error('Error restarting recognition:', e);
       }
     }
   };
   
-  // Event fired on errors
   recog.onerror = (event) => {
-    updateStatus(`❌ Recognition Error: ${event.error}`, '#e74c3c');
+    updateStatus(`CRITICAL ERROR: ${event.error}`, '#e63946');
     console.error('Speech recognition error:', event.error);
-    // Stop the process on critical error
     if (listening) {
       recognition.stop();
       listening = false;
       updateButtons(false);
-      updateStatus('Transcription stopped due to error.', '#e74c3c');
+      updateStatus('SYSTEM HALTED: Review Log.', '#e63946');
     }
   };
 
@@ -137,7 +223,6 @@ function initializeRecognition() {
 startBtn.addEventListener('click', () => {
   if (listening) return;
 
-  // Clear transcript only if it's the first time or user wants a fresh start (optional, but cleaner)
   if (transcriptText.trim().length > 0) {
     transcriptText = '';
     transcriptDiv.innerText = '';
@@ -150,13 +235,11 @@ startBtn.addEventListener('click', () => {
       recognition.start();
       listening = true;
       updateButtons(true);
-      updateStatus('🟢 Listening... Speak now.', '#2ecc71');
+      updateStatus('ACTIVE: Data Feed Initiated.', '#00ff00'); /* Bright Green for Active */
     } catch (e) {
-      // Handle case where recognition is already active
-      console.warn('Recognition already started or an error occurred:', e);
+      updateStatus('WARNING: Already Active.', '#00ff00'); 
       listening = true;
       updateButtons(true);
-      updateStatus('🟢 Listening... Speak now.', '#2ecc71');
     }
   }
 });
@@ -167,34 +250,32 @@ stopBtn.addEventListener('click', () => {
   recognition.stop();
   listening = false;
   updateButtons(false);
-  updateStatus('⏸️ Recording stopped. Finalizing transcript.', '#3498db');
+  updateStatus('PAUSED: Finalizing Transcript Log.', '#4fc3f7');
   
-  // Remove the interim text placeholder after stopping
   transcriptDiv.innerText = transcriptText;
 });
 
 downloadBtn.addEventListener('click', () => {
   if (transcriptText.trim().length === 0) {
-    updateStatus('🚫 Nothing to download.', '#e74c3c');
+    updateStatus('ERROR: Log is empty. Nothing to download.', '#e63946');
     return;
   }
   
   const blob = new Blob([transcriptText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, ''); // Format YYYYMMDDHHMMSS
   
   a.href = url;
-  a.download = `meeting_transcript_${date}.txt`;
+  a.download = `NGT_LOG_${date}.txt`;
   
   document.body.appendChild(a);
   a.click();
   
-  // Clean up the temporary URL and element
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   
-  updateStatus('✅ Transcript downloaded successfully!', '#2ecc71');
+  updateStatus('SUCCESS: Log downloaded.', '#00ff00');
 });
 
 // Initial state setup
